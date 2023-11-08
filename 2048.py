@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from random import choice, randint
+from random import choice
 from typing import (
     Dict,
     Final,
@@ -16,6 +16,9 @@ ColourType = Tuple[int, int, int]
 # Define some colors
 BLACK: Final[ColourType] = (0, 0, 0)
 WHITE: Final[ColourType] = (255, 255, 255)
+TILE_SIZE: Final[int] = 150
+BOARD_SIZE: Final[int] = 4
+SCREEN_DIMENSIONS: Final[Tuple[int, int]] = (TILE_SIZE*BOARD_SIZE, TILE_SIZE*BOARD_SIZE)
 UNKNOWN_COLOUR: Final[pygame.Color] = pygame.Color("#080808")
 BASE_COLOUR: Final[pygame.Color] = pygame.Color("#FFFFFF")
 COLOURS: Final[Dict[int, pygame.Color]] = {
@@ -41,10 +44,10 @@ class Tile:
         font: pygame.font.Font,
         size: int,
     ) -> None:
-        self.value = value
+        self.value = choice([value, value, None])
         self.x = x
         self.y = y
-        self._font = font
+        self.font = font
         self._size = size
         self.needs_rendering = True
 
@@ -61,7 +64,7 @@ class Tile:
     def colour(self) -> pygame.Color:
         if self.value is None:
             return BASE_COLOUR
-        return COLOURS.get(self.value, UNKNOWN_COLOUR)
+        return COLOURS.get(self.value, BASE_COLOUR)
 
     @property
     def pos(self) -> Tuple[int, int]:
@@ -81,7 +84,7 @@ class Tile:
             self._rect_info,
         )
         if self.value is not None:
-            text = self._font.render(f"{self.value} : ({self.x}, {self.y})", True, BLACK)
+            text = self.font.render(f"{self.value} : (r:{self.x}, c:{self.y})", True, BLACK)
             text_rect = text.get_rect(center=self.center_pos)
             screen.blit(text, text_rect)
             pygame.display.update()
@@ -90,8 +93,39 @@ class Tile:
 Board = List[List[Tile]]
 
 
-def move_up(board: Board) -> Board:
-    ...
+def create_empty_board(font: pygame.font.Font, random: bool = False) -> Board:
+    return [
+        [
+            Tile(
+                value=(
+                    None if not random else choice(list(COLOURS.keys()))
+                ),
+                x=x,
+                y=y,
+                font=font,
+                size=TILE_SIZE,
+            ) for x in range(BOARD_SIZE)]
+        for y in range(BOARD_SIZE)
+    ]
+
+
+def move_up(old_board: Board) -> Board:
+    new_board = create_empty_board(font=old_board[0][0].font)
+    # range(len(x)-1, -1, -1) : returns List[int] of decending indexes n long.
+    # TODO: find a nicer way to do this
+    for y in range(len(old_board)-1, -1, -1):
+        for x in range(len(old_board[y])):
+            if old_board[y][x].value is None:
+                continue
+            elif y == 0:
+                new_board[y][x].value = old_board[y][x].value
+            elif old_board[y-1][x].value == old_board[y][x].value:
+                new_board[y-1][x].value = old_board[y][x].value * 2 # type: ignore[reportOptionalOperand] (type checker wrong)
+            elif old_board[y-1][x].value is None:
+                new_board[y-1][x].value = old_board[y][x].value
+            else:
+                new_board[y][x].value = old_board[y][x].value
+    return new_board
 
 
 def move_down(board: Board) -> Board:
@@ -109,20 +143,7 @@ def move_right(board: Board) -> Board:
 def main() -> None:
     pygame.init()
     FONT: Final[pygame.font.Font] = pygame.font.SysFont('Arial', 25)
-    TILE_SIZE: Final[int] = 150
-    BOARD_SIZE: Final[int] = 4
-    SCREEN_DIMENSIONS: Final[Tuple[int, int]] = (TILE_SIZE*BOARD_SIZE, TILE_SIZE*BOARD_SIZE)
-    board: Board = [
-        [
-            Tile(
-                value=choice(list(COLOURS.keys())),
-                x=x,
-                y=y,
-                font=FONT,
-                size=TILE_SIZE,
-            ) for x in range(BOARD_SIZE)]
-        for y in range(BOARD_SIZE)
-    ]
+    board = create_empty_board(font=FONT, random=True)
 
     screen = pygame.display.set_mode(SCREEN_DIMENSIONS)
 
@@ -153,7 +174,7 @@ def main() -> None:
 
         for row in board:
             for tile in row:
-                if tile.needs_rendering:
+                # if tile.needs_rendering:
                     tile.draw(screen)
                     tile.needs_rendering = False
 
