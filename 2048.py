@@ -1,0 +1,166 @@
+from __future__ import annotations
+
+from random import choice, randint
+from typing import (
+    Dict,
+    Final,
+    List,
+    Optional,
+    Tuple,
+)
+
+import pygame
+
+ColourType = Tuple[int, int, int]
+
+# Define some colors
+BLACK: Final[ColourType] = (0, 0, 0)
+WHITE: Final[ColourType] = (255, 255, 255)
+UNKNOWN_COLOUR: Final[pygame.Color] = pygame.Color("#080808")
+BASE_COLOUR: Final[pygame.Color] = pygame.Color("#FFFFFF")
+COLOURS: Final[Dict[int, pygame.Color]] = {
+    2:    pygame.Color("#7ec0ee"),
+    4:    pygame.Color("#EDE0C8"),
+    8:    pygame.Color("#F2B179"),
+    16:   pygame.Color("#F59563"),
+    32:   pygame.Color("#F67C60"),
+    64:   pygame.Color("#F65E3B"),
+    128:  pygame.Color("#EDCF73"),
+    256:  pygame.Color("#EDCC62"),
+    512:  pygame.Color("#EDC850"),
+    1024: pygame.Color("#EDC53F"),
+    2048: pygame.Color("#EDC22D"),
+}
+
+class Tile:
+    def __init__(
+        self,
+        value: Optional[int],
+        x: int,
+        y: int,
+        font: pygame.font.Font,
+        size: int,
+    ) -> None:
+        self.value = value
+        self.x = x
+        self.y = y
+        self._font = font
+        self._size = size
+        self.needs_rendering = True
+
+    @property
+    def _rect_info(self) -> Tuple[int, int, int, int]:
+        return (
+            self.pos[0],
+            self.pos[1],
+            self._size,
+            self._size,
+        )
+
+    @property
+    def colour(self) -> pygame.Color:
+        if self.value is None:
+            return BASE_COLOUR
+        return COLOURS.get(self.value, UNKNOWN_COLOUR)
+
+    @property
+    def pos(self) -> Tuple[int, int]:
+        return (self.x*self._size, self.y*self._size)
+
+    @property
+    def center_pos(self) -> Tuple[int, int]:
+        return (
+            int(self.pos[0] + (self._size/2)),
+            int(self.pos[1] + (self._size/2)),
+        )
+
+    def draw(self, screen: pygame.Surface) -> None:
+        pygame.draw.rect(
+            screen,
+            self.colour,
+            self._rect_info,
+        )
+        if self.value is not None:
+            text = self._font.render(f"{self.value} : ({self.x}, {self.y})", True, BLACK)
+            text_rect = text.get_rect(center=self.center_pos)
+            screen.blit(text, text_rect)
+            pygame.display.update()
+
+
+Board = List[List[Tile]]
+
+
+def move_up(board: Board) -> Board:
+    ...
+
+
+def move_down(board: Board) -> Board:
+    ...
+
+
+def move_left(board: Board) -> Board:
+    ...
+
+
+def move_right(board: Board) -> Board:
+    ...
+
+
+def main() -> None:
+    pygame.init()
+    FONT: Final[pygame.font.Font] = pygame.font.SysFont('Arial', 25)
+    TILE_SIZE: Final[int] = 150
+    BOARD_SIZE: Final[int] = 4
+    SCREEN_DIMENSIONS: Final[Tuple[int, int]] = (TILE_SIZE*BOARD_SIZE, TILE_SIZE*BOARD_SIZE)
+    board: Board = [
+        [
+            Tile(
+                value=choice(list(COLOURS.keys())),
+                x=x,
+                y=y,
+                font=FONT,
+                size=TILE_SIZE,
+            ) for x in range(BOARD_SIZE)]
+        for y in range(BOARD_SIZE)
+    ]
+
+    screen = pygame.display.set_mode(SCREEN_DIMENSIONS)
+
+    pygame.display.set_caption("2048")
+
+    done = False
+    clock = pygame.time.Clock()
+
+    while not done:
+        for event in pygame.event.get():
+            match event.type:
+                case pygame.QUIT:
+                    done = True
+                case pygame.KEYDOWN:
+                    match event.key:
+                        case pygame.K_UP:
+                            board = move_up(board)
+                        case pygame.K_DOWN:
+                            board = move_down(board)
+                        case pygame.K_LEFT:
+                            board = move_left(board)
+                        case pygame.K_RIGHT:
+                            board = move_right(board)
+                        case _:
+                            pass
+                case _:
+                    pass
+
+        for row in board:
+            for tile in row:
+                if tile.needs_rendering:
+                    tile.draw(screen)
+                    tile.needs_rendering = False
+
+        clock.tick(60)
+        pygame.display.flip()
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()
