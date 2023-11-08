@@ -113,12 +113,13 @@ def move_up(old_board: Board) -> Board:
     new_board = create_empty_board(font=old_board[0][0].font)
     # range(len(x)-1, -1, -1) : returns List[int] of decending indexes n long.
     # TODO: find a nicer way to do this
+    new_board[0] = old_board[0]
     for y in range(len(old_board)-1, -1, -1):
+        if y == 0:
+            continue
         for x in range(len(old_board[y])):
             if old_board[y][x].value is None:
                 continue
-            elif y == 0:
-                new_board[y][x].value = old_board[y][x].value
             elif old_board[y-1][x].value == old_board[y][x].value:
                 new_board[y-1][x].value = old_board[y][x].value * 2 # type: ignore[reportOptionalOperand] (type checker wrong)
             elif old_board[y-1][x].value is None:
