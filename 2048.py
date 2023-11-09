@@ -241,7 +241,10 @@ def complete_move(board: Board, move_func: Callable[..., Board]) -> Tuple[Board,
 def main() -> None:
     pygame.init()
     FONT: Final[pygame.font.Font] = pygame.font.SysFont('Arial', 25)
-    board = create_board(font=FONT)
+    board = create_board(
+        font=FONT,
+        starting_board=True,
+    )
 
     screen = pygame.display.set_mode(SCREEN_DIMENSIONS)
 
