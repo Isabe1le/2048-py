@@ -170,8 +170,27 @@ def move_left(old_board: Board) -> Board:
     return new_board
 
 
-def move_right(board: Board) -> Board:
-    ...
+def move_right(old_board: Board) -> Board:
+    new_board = create_board(font=old_board[0][0].font)
+
+    for y in range(len(old_board)):
+        for x in range(len(old_board[y])):
+            if x == len(old_board)-1:
+                new_board[y][x] = old_board[y][x]
+
+    for y in range(len(old_board)):
+        for x in range(len(old_board[y])):
+            if x == len(old_board)-1:
+                continue
+            if old_board[y][x].value is None:
+                continue
+            elif old_board[y][x+1].value == old_board[y][x].value:
+                new_board[y][x+1].value = old_board[y][x].value * 2 # type: ignore[reportOptionalOperand] (type checker wrong)
+            elif old_board[y][x+1].value is None:
+                new_board[y][x+1].value = old_board[y][x].value
+            elif new_board[y][x].value is None:
+                new_board[y][x].value = old_board[y][x].value
+    return new_board
 
 
 def main() -> None:
