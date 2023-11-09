@@ -289,6 +289,11 @@ def main() -> None:
     for row in board:
         for tile in row:
             tile.draw(screen, FONT)
+
+    text = FONT.render(f"Score: {score}", True, BLACK)
+    text_rect = text.get_rect()
+    screen.blit(text, text_rect)
+
     # print_board(board)
 
     while not done:
@@ -333,6 +338,11 @@ def main() -> None:
             more_moves_possible = check_more_moves_possible(board)
             if not more_moves_possible:
                 draw_loose_screen(screen, FONT)
+
+            else:
+                text = FONT.render(f"Score: {score}", True, BLACK)
+                text_rect = text.get_rect()
+                screen.blit(text, text_rect)
 
         clock.tick(30)
         pygame.display.flip()
