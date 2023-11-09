@@ -96,7 +96,6 @@ def check_boards_are_same(old_board: Board, new_board: Board) -> bool:
     for y in range(len(old_board)):
         for x in range(len(old_board[y])):
             if old_board[y][x].value != new_board[y][x].value:
-                print(old_board[y][x].value, new_board[y][x].value)
                 return False
     return True
 
@@ -233,7 +232,6 @@ def complete_move(board: Board, move_func: Callable[..., Board]) -> Tuple[Board,
         new_board = move_func(new_board)
 
     boards_are_same = check_boards_are_same(board, new_board)
-    print(f"{boards_are_same=}")
     if not boards_are_same:
         board = new_board
 
