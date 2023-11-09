@@ -100,13 +100,11 @@ def check_move_complete(old_board: Board, new_board: Board) -> bool:
     return True
 
 
-def create_board(font: pygame.font.Font, random: bool = False) -> Board:
-    return [
+def create_board(font: pygame.font.Font, starting_board: bool = False) -> Board:
+    board = [
         [
             Tile(
-                value=(
-                    None if not random else choice(list(COLOURS.keys()))
-                ),
+                value=None,
                 x=x,
                 y=y,
                 font=font,
@@ -115,6 +113,13 @@ def create_board(font: pygame.font.Font, random: bool = False) -> Board:
         for y in range(BOARD_SIZE)
     ]
 
+    if starting_board:
+        for _ in range(max([2, int(BOARD_SIZE/2)])):
+            x = choice(range(len(board)))
+            y = choice(range(len(board[0])))
+            board[y][x].value = choice([2, 4])
+
+    return board
 
 def move_up(old_board: Board) -> Board:
     new_board = create_board(font=old_board[0][0].font)
@@ -203,7 +208,7 @@ def move_right(old_board: Board) -> Board:
 def main() -> None:
     pygame.init()
     FONT: Final[pygame.font.Font] = pygame.font.SysFont('Arial', 25)
-    board = create_board(font=FONT, random=True)
+    board = create_board(font=FONT, starting_board=True)
 
     screen = pygame.display.set_mode(SCREEN_DIMENSIONS)
 
@@ -212,7 +217,12 @@ def main() -> None:
     done = False
     clock = pygame.time.Clock()
 
+    for row in board:
+        for tile in row:
+            tile.draw(screen)
+
     while not done:
+        moved = False
         for event in pygame.event.get():
             match event.type:
                 case pygame.QUIT:
@@ -220,6 +230,7 @@ def main() -> None:
                 case pygame.KEYDOWN:
                     match event.key:
                         case pygame.K_UP:
+                            moved = True
                             new_board = move_up(board)
                             permutated_board = new_board
                             while True:
@@ -230,6 +241,7 @@ def main() -> None:
                                     break
                             board = new_board
                         case pygame.K_DOWN:
+                            moved = True
                             new_board = move_down(board)
                             permutated_board = new_board
                             while True:
@@ -240,6 +252,7 @@ def main() -> None:
                                     break
                             board = new_board
                         case pygame.K_LEFT:
+                            moved = True
                             new_board = move_left(board)
                             permutated_board = new_board
                             while True:
@@ -250,6 +263,7 @@ def main() -> None:
                                     break
                             board = new_board
                         case pygame.K_RIGHT:
+                            moved = True
                             new_board = move_right(board)
                             permutated_board = new_board
                             while True:
@@ -264,9 +278,23 @@ def main() -> None:
                 case _:
                     pass
 
-        for row in board:
-            for tile in row:
-                tile.draw(screen)
+        if moved:
+            # Find all open positions
+            open_positions: List[Tuple[int, int]] = []
+            for y in range(len(board)):
+                for x in range(len(board[y])):
+                    if board[y][x].value is None:
+                        open_positions.append((x, y))
+
+            # Add a new tile, if possible.
+            if len(open_positions) != 0:
+                new_tile_position = choice(open_positions)
+                x, y = new_tile_position
+                board[y][x].value = choice([2, 4])
+
+            for row in board:
+                for tile in row:
+                    tile.draw(screen)
 
         clock.tick(5)
         pygame.display.flip()
