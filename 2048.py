@@ -49,7 +49,6 @@ class Tile:
         self.y = y
         self.font = font
         self._size = size
-        self.needs_rendering = True
 
     @property
     def _rect_info(self) -> Tuple[int, int, int, int]:
@@ -84,7 +83,7 @@ class Tile:
             self._rect_info,
         )
         if self.value is not None:
-            text = self.font.render(f"{self.value} : (r:{self.x}, c:{self.y})", True, BLACK)
+            text = self.font.render(str(self.value), True, BLACK)
             text_rect = text.get_rect(center=self.center_pos)
             screen.blit(text, text_rect)
             pygame.display.update()
@@ -267,9 +266,7 @@ def main() -> None:
 
         for row in board:
             for tile in row:
-                # if tile.needs_rendering:
-                    tile.draw(screen)
-                    tile.needs_rendering = False
+                tile.draw(screen)
 
         clock.tick(5)
         pygame.display.flip()
