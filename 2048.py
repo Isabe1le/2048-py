@@ -18,7 +18,7 @@ ColourType = Tuple[int, int, int]
 # Define some colors
 BLACK: Final[ColourType] = (0, 0, 0)
 WHITE: Final[ColourType] = (255, 255, 255)
-TILE_SIZE: Final[int] = 150
+TILE_SIZE: Final[int] = 100
 BOARD_SIZE: Final[int] = 4
 SCREEN_DIMENSIONS: Final[Tuple[int, int]] = (TILE_SIZE*BOARD_SIZE, TILE_SIZE*BOARD_SIZE)
 UNKNOWN_COLOUR: Final[pygame.Color] = pygame.Color("#FFFF00")
@@ -36,6 +36,10 @@ COLOURS: Final[Dict[int, pygame.Color]] = {
     1024: pygame.Color("#EDC53F"),
     2048: pygame.Color("#EDC22D"),
 }
+
+global score
+score: int = 0
+
 
 class Tile:
     def __init__(
@@ -101,7 +105,6 @@ def check_boards_are_same(old_board: Board, new_board: Board) -> bool:
 
 
 def create_board(
-    font: pygame.font.Font,
     starting_board: bool = False,
     fixed_start: Optional[List[List[int]]] = None,
 ) -> Board:
@@ -133,6 +136,7 @@ def create_board(
     return board
 
 def move_up(board: Board) -> Board:
+    global score
     for y in range(len(board)):
         if y == len(board)-1:
             continue
@@ -150,11 +154,13 @@ def move_up(board: Board) -> Board:
                 and tile_value is not None
             ):
                 board[y][x].value = tile_value * 2
+                score += tile_value * 2
                 board[y+1][x].value = None
     return board
 
 
 def move_down(board: Board) -> Board:
+    global score
     for y in range(len(board)):
         if y == 0:
             continue
@@ -172,11 +178,13 @@ def move_down(board: Board) -> Board:
                 and tile_value is not None
             ):
                 board[y][x].value = tile_value * 2
+                score += tile_value * 2
                 board[y-1][x].value = None
     return board
 
 
 def move_left(board: Board) -> Board:
+    global score
     for y in range(len(board)):
         for x in range(len(board[y])):
             if x == len(board[y])-1:
@@ -194,11 +202,13 @@ def move_left(board: Board) -> Board:
                 and tile_value is not None
             ):
                 board[y][x].value = tile_value * 2
+                score += tile_value * 2
                 board[y][x+1].value = None
     return board
 
 
 def move_right(board: Board) -> Board:
+    global score
     for y in range(len(board)):
         for x in range(len(board[y])):
             if x == 0:
@@ -216,6 +226,7 @@ def move_right(board: Board) -> Board:
                 and tile_value is not None
             ):
                 board[y][x].value = tile_value * 2
+                score += tile_value * 2
                 board[y][x-1].value = None
     return board
 
@@ -228,7 +239,7 @@ def print_board(board: Board) -> None:
 
 def complete_move(board: Board, move_func: Callable[..., Board]) -> Tuple[Board, bool]:
     new_board = deepcopy(board)
-    for _ in range(10):
+    for _ in range(BOARD_SIZE**2):
         new_board = move_func(new_board)
 
     boards_are_same = check_boards_are_same(board, new_board)
@@ -238,13 +249,35 @@ def complete_move(board: Board, move_func: Callable[..., Board]) -> Tuple[Board,
     return board, not boards_are_same
 
 
+def check_more_moves_possible(board: Board) -> bool:
+    move_functions = [move_up, move_down, move_left, move_right]
+    for move_func in move_functions:
+        new_board = deepcopy(board)
+        moved_board = move_func(new_board)
+        move_changed_board = not check_boards_are_same(board, moved_board)
+        if move_changed_board:
+            return True
+    return False
+
+
+def draw_loose_screen(screen: pygame.Surface, font: pygame.font.Font) -> None:
+    global score
+    surface = pygame.Surface(SCREEN_DIMENSIONS)
+    surface.set_alpha(128)
+    surface.fill(BLACK)
+    screen.blit(surface, (0,0))
+    text = font.render(f"You lost :(  |  Score: {score}", True, BLACK)
+    text_rect = text.get_rect(center=(
+        SCREEN_DIMENSIONS[0] / 2,
+        SCREEN_DIMENSIONS[1] / 2,
+    ))
+    screen.blit(text, text_rect)
+    pygame.display.update()
+
 def main() -> None:
     pygame.init()
     FONT: Final[pygame.font.Font] = pygame.font.SysFont('Arial', 25)
-    board = create_board(
-        font=FONT,
-        starting_board=True,
-    )
+    board = create_board(starting_board=True)
 
     screen = pygame.display.set_mode(SCREEN_DIMENSIONS)
 
@@ -297,7 +330,9 @@ def main() -> None:
                 for tile in row:
                     tile.draw(screen, FONT)
 
-            # print_board(board)
+            more_moves_possible = check_more_moves_possible(board)
+            if not more_moves_possible:
+                draw_loose_screen(screen, FONT)
 
         clock.tick(30)
         pygame.display.flip()
