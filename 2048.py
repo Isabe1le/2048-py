@@ -19,7 +19,7 @@ WHITE: Final[ColourType] = (255, 255, 255)
 TILE_SIZE: Final[int] = 150
 BOARD_SIZE: Final[int] = 4
 SCREEN_DIMENSIONS: Final[Tuple[int, int]] = (TILE_SIZE*BOARD_SIZE, TILE_SIZE*BOARD_SIZE)
-UNKNOWN_COLOUR: Final[pygame.Color] = pygame.Color("#080808")
+UNKNOWN_COLOUR: Final[pygame.Color] = pygame.Color("#FFFF00")
 BASE_COLOUR: Final[pygame.Color] = pygame.Color("#FFFFFF")
 COLOURS: Final[Dict[int, pygame.Color]] = {
     2:    pygame.Color("#7ec0ee"),
