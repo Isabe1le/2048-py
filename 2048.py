@@ -205,6 +205,12 @@ def move_right(old_board: Board) -> Board:
     return new_board
 
 
+def print_board(board: Board) -> None:
+    for y in range(len(board)):
+        print("\t".join([str(tile.value or "0") for tile in board[y]]))
+    print("=============")
+
+
 def main() -> None:
     pygame.init()
     FONT: Final[pygame.font.Font] = pygame.font.SysFont('Arial', 25)
@@ -220,6 +226,7 @@ def main() -> None:
     for row in board:
         for tile in row:
             tile.draw(screen)
+    print_board(board)
 
     while not done:
         moved = False
@@ -295,6 +302,8 @@ def main() -> None:
             for row in board:
                 for tile in row:
                     tile.draw(screen)
+
+            print_board(board)
 
         clock.tick(5)
         pygame.display.flip()
