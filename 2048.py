@@ -44,7 +44,7 @@ class Tile:
         font: pygame.font.Font,
         size: int,
     ) -> None:
-        self.value = choice([value, value, None])
+        self.value = value
         self.x = x
         self.y = y
         self.font = font
@@ -62,7 +62,7 @@ class Tile:
 
     @property
     def colour(self) -> pygame.Color:
-        if self.value is None:
+        if self.value == 0 or self.value is None:
             return BASE_COLOUR
         return COLOURS.get(self.value, BASE_COLOUR)
 
@@ -93,7 +93,7 @@ class Tile:
 Board = List[List[Tile]]
 
 
-def create_empty_board(font: pygame.font.Font, random: bool = False) -> Board:
+def create_board(font: pygame.font.Font, random: bool = False) -> Board:
     return [
         [
             Tile(
@@ -110,7 +110,7 @@ def create_empty_board(font: pygame.font.Font, random: bool = False) -> Board:
 
 
 def move_up(old_board: Board) -> Board:
-    new_board = create_empty_board(font=old_board[0][0].font)
+    new_board = create_board(font=old_board[0][0].font)
     # range(len(x)-1, -1, -1) : returns List[int] of decending indexes n long.
     # TODO: find a nicer way to do this
     new_board[0] = old_board[0]
@@ -124,13 +124,13 @@ def move_up(old_board: Board) -> Board:
                 new_board[y-1][x].value = old_board[y][x].value * 2 # type: ignore[reportOptionalOperand] (type checker wrong)
             elif old_board[y-1][x].value is None:
                 new_board[y-1][x].value = old_board[y][x].value
-            else:
+            elif new_board[y][x].value is None:
                 new_board[y][x].value = old_board[y][x].value
     return new_board
 
 
 def move_down(old_board: Board) -> Board:
-    new_board = create_empty_board(font=old_board[0][0].font)
+    new_board = create_board(font=old_board[0][0].font)
     new_board[-1] = old_board[-1]
     for y in range(len(old_board)):
         if y == len(old_board)-1:
@@ -142,13 +142,13 @@ def move_down(old_board: Board) -> Board:
                 new_board[y+1][x].value = old_board[y][x].value * 2 # type: ignore[reportOptionalOperand] (type checker wrong)
             elif old_board[y+1][x].value is None:
                 new_board[y+1][x].value = old_board[y][x].value
-            else:
+            elif new_board[y][x].value is None:
                 new_board[y][x].value = old_board[y][x].value
     return new_board
 
 
 def move_left(old_board: Board) -> Board:
-    new_board = create_empty_board(font=old_board[0][0].font)
+    new_board = create_board(font=old_board[0][0].font)
 
     for y in range(len(old_board)):
         for x in range(len(old_board[y])):
@@ -165,7 +165,7 @@ def move_left(old_board: Board) -> Board:
                 new_board[y][x-1].value = old_board[y][x].value * 2 # type: ignore[reportOptionalOperand] (type checker wrong)
             elif old_board[y][x-1].value is None:
                 new_board[y][x-1].value = old_board[y][x].value
-            else:
+            elif new_board[y][x].value is None:
                 new_board[y][x].value = old_board[y][x].value
     return new_board
 
@@ -177,7 +177,7 @@ def move_right(board: Board) -> Board:
 def main() -> None:
     pygame.init()
     FONT: Final[pygame.font.Font] = pygame.font.SysFont('Arial', 25)
-    board = create_empty_board(font=FONT, random=True)
+    board = create_board(font=FONT, random=True)
 
     screen = pygame.display.set_mode(SCREEN_DIMENSIONS)
 
@@ -212,7 +212,7 @@ def main() -> None:
                     tile.draw(screen)
                     tile.needs_rendering = False
 
-        clock.tick(60)
+        clock.tick(5)
         pygame.display.flip()
     pygame.quit()
 
