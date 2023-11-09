@@ -93,6 +93,14 @@ class Tile:
 Board = List[List[Tile]]
 
 
+def check_move_complete(old_board: Board, new_board: Board) -> bool:
+    for y in range(len(old_board)):
+        for x in range(len(old_board[y])):
+            if old_board[y][x].value != new_board[y][x].value:
+                return False
+    return True
+
+
 def create_board(font: pygame.font.Font, random: bool = False) -> Board:
     return [
         [
@@ -213,13 +221,45 @@ def main() -> None:
                 case pygame.KEYDOWN:
                     match event.key:
                         case pygame.K_UP:
-                            board = move_up(board)
+                            new_board = move_up(board)
+                            permutated_board = new_board
+                            while True:
+                                permutated_board = move_up(permutated_board)
+                                move_complete = check_move_complete(permutated_board, new_board)
+                                new_board = permutated_board
+                                if move_complete:
+                                    break
+                            board = new_board
                         case pygame.K_DOWN:
-                            board = move_down(board)
+                            new_board = move_down(board)
+                            permutated_board = new_board
+                            while True:
+                                permutated_board = move_down(permutated_board)
+                                move_complete = check_move_complete(permutated_board, new_board)
+                                new_board = permutated_board
+                                if move_complete:
+                                    break
+                            board = new_board
                         case pygame.K_LEFT:
-                            board = move_left(board)
+                            new_board = move_left(board)
+                            permutated_board = new_board
+                            while True:
+                                permutated_board = move_left(permutated_board)
+                                move_complete = check_move_complete(permutated_board, new_board)
+                                new_board = permutated_board
+                                if move_complete:
+                                    break
+                            board = new_board
                         case pygame.K_RIGHT:
-                            board = move_right(board)
+                            new_board = move_right(board)
+                            permutated_board = new_board
+                            while True:
+                                permutated_board = move_right(permutated_board)
+                                move_complete = check_move_complete(permutated_board, new_board)
+                                new_board = permutated_board
+                                if move_complete:
+                                    break
+                            board = new_board
                         case _:
                             pass
                 case _:
