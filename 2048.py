@@ -1,7 +1,9 @@
 from __future__ import annotations
+from copy import deepcopy
 
 from random import choice
 from typing import (
+    Callable,
     Dict,
     Final,
     List,
@@ -41,13 +43,11 @@ class Tile:
         value: Optional[int],
         x: int,
         y: int,
-        font: pygame.font.Font,
         size: int,
     ) -> None:
         self.value = value
         self.x = x
         self.y = y
-        self.font = font
         self._size = size
 
     @property
@@ -76,14 +76,14 @@ class Tile:
             int(self.pos[1] + (self._size/2)),
         )
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         pygame.draw.rect(
             screen,
             self.colour,
             self._rect_info,
         )
         if self.value is not None:
-            text = self.font.render(str(self.value), True, BLACK)
+            text = font.render(str(self.value), True, BLACK)
             text_rect = text.get_rect(center=self.center_pos)
             screen.blit(text, text_rect)
             pygame.display.update()
@@ -92,22 +92,34 @@ class Tile:
 Board = List[List[Tile]]
 
 
-def check_move_complete(old_board: Board, new_board: Board) -> bool:
+def check_boards_are_same(old_board: Board, new_board: Board) -> bool:
     for y in range(len(old_board)):
         for x in range(len(old_board[y])):
             if old_board[y][x].value != new_board[y][x].value:
+                print(old_board[y][x].value, new_board[y][x].value)
                 return False
     return True
 
 
-def create_board(font: pygame.font.Font, starting_board: bool = False) -> Board:
+def create_board(
+    font: pygame.font.Font,
+    starting_board: bool = False,
+    fixed_start: Optional[List[List[int]]] = None,
+) -> Board:
+    if starting_board and fixed_start is not None:
+        raise ValueError("Cannot have `starting_board` and `fixed_start` enabled.")
     board = [
         [
             Tile(
-                value=None,
+                value=(
+                    None if fixed_start is None
+                    else (
+                        None if fixed_start[y][x] == 0
+                        else fixed_start[y][x]
+                    )
+                ),
                 x=x,
                 y=y,
-                font=font,
                 size=TILE_SIZE,
             ) for x in range(BOARD_SIZE)]
         for y in range(BOARD_SIZE)
@@ -121,100 +133,117 @@ def create_board(font: pygame.font.Font, starting_board: bool = False) -> Board:
 
     return board
 
-def move_up(old_board: Board) -> Board:
-    new_board = create_board(font=old_board[0][0].font)
-    # range(len(x)-1, -1, -1) : returns List[int] of decending indexes n long.
-    # TODO: find a nicer way to do this
-    new_board[0] = old_board[0]
-    for y in range(len(old_board)-1, -1, -1):
+def move_up(board: Board) -> Board:
+    for y in range(len(board)):
+        if y == len(board)-1:
+            continue
+        for x in range(len(board[y])):
+            tile_value = board[y][x].value
+            tile_below_value = board[y+1][x].value
+            if (
+                tile_value is None
+                and tile_below_value is not None
+            ):
+                board[y][x].value = tile_below_value
+                board[y+1][x].value = None
+            elif (
+                tile_value == tile_below_value
+                and tile_value is not None
+            ):
+                board[y][x].value = tile_value * 2
+                board[y+1][x].value = None
+    return board
+
+
+def move_down(board: Board) -> Board:
+    for y in range(len(board)):
         if y == 0:
             continue
-        for x in range(len(old_board[y])):
-            if old_board[y][x].value is None:
+        for x in range(len(board[y])):
+            tile_value = board[y][x].value
+            tile_below_value = board[y-1][x].value
+            if (
+                tile_value is None
+                and tile_below_value is not None
+            ):
+                board[y][x].value = tile_below_value
+                board[y-1][x].value = None
+            elif (
+                tile_value == tile_below_value
+                and tile_value is not None
+            ):
+                board[y][x].value = tile_value * 2
+                board[y-1][x].value = None
+    return board
+
+
+def move_left(board: Board) -> Board:
+    for y in range(len(board)):
+        for x in range(len(board[y])):
+            if x == len(board[y])-1:
                 continue
-            elif old_board[y-1][x].value == old_board[y][x].value:
-                new_board[y-1][x].value = old_board[y][x].value * 2 # type: ignore[reportOptionalOperand] (type checker wrong)
-            elif old_board[y-1][x].value is None:
-                new_board[y-1][x].value = old_board[y][x].value
-            elif new_board[y][x].value is None:
-                new_board[y][x].value = old_board[y][x].value
-    return new_board
+            tile_value = board[y][x].value
+            tile_below_value = board[y][x+1].value
+            if (
+                tile_value is None
+                and tile_below_value is not None
+            ):
+                board[y][x].value = tile_below_value
+                board[y][x+1].value = None
+            elif (
+                tile_value == tile_below_value
+                and tile_value is not None
+            ):
+                board[y][x].value = tile_value * 2
+                board[y][x+1].value = None
+    return board
 
 
-def move_down(old_board: Board) -> Board:
-    new_board = create_board(font=old_board[0][0].font)
-    new_board[-1] = old_board[-1]
-    for y in range(len(old_board)):
-        if y == len(old_board)-1:
-            continue
-        for x in range(len(old_board[y])):
-            if old_board[y][x].value is None:
-                continue
-            elif old_board[y+1][x].value == old_board[y][x].value:
-                new_board[y+1][x].value = old_board[y][x].value * 2 # type: ignore[reportOptionalOperand] (type checker wrong)
-            elif old_board[y+1][x].value is None:
-                new_board[y+1][x].value = old_board[y][x].value
-            elif new_board[y][x].value is None:
-                new_board[y][x].value = old_board[y][x].value
-    return new_board
-
-
-def move_left(old_board: Board) -> Board:
-    new_board = create_board(font=old_board[0][0].font)
-
-    for y in range(len(old_board)):
-        for x in range(len(old_board[y])):
+def move_right(board: Board) -> Board:
+    for y in range(len(board)):
+        for x in range(len(board[y])):
             if x == 0:
-                new_board[y][x] = old_board[y][x]
-
-    for y in range(len(old_board)):
-        for x in range(len(old_board[y])):
-            if x == 0:
                 continue
-            if old_board[y][x].value is None:
-                continue
-            elif old_board[y][x-1].value == old_board[y][x].value:
-                new_board[y][x-1].value = old_board[y][x].value * 2 # type: ignore[reportOptionalOperand] (type checker wrong)
-            elif old_board[y][x-1].value is None:
-                new_board[y][x-1].value = old_board[y][x].value
-            elif new_board[y][x].value is None:
-                new_board[y][x].value = old_board[y][x].value
-    return new_board
-
-
-def move_right(old_board: Board) -> Board:
-    new_board = create_board(font=old_board[0][0].font)
-
-    for y in range(len(old_board)):
-        for x in range(len(old_board[y])):
-            if x == len(old_board)-1:
-                new_board[y][x] = old_board[y][x]
-
-    for y in range(len(old_board)):
-        for x in range(len(old_board[y])):
-            if x == len(old_board)-1:
-                continue
-            if old_board[y][x].value is None:
-                continue
-            elif old_board[y][x+1].value == old_board[y][x].value:
-                new_board[y][x+1].value = old_board[y][x].value * 2 # type: ignore[reportOptionalOperand] (type checker wrong)
-            elif old_board[y][x+1].value is None:
-                new_board[y][x+1].value = old_board[y][x].value
-            elif new_board[y][x].value is None:
-                new_board[y][x].value = old_board[y][x].value
-    return new_board
+            tile_value = board[y][x].value
+            tile_below_value = board[y][x-1].value
+            if (
+                tile_value is None
+                and tile_below_value is not None
+            ):
+                board[y][x].value = tile_below_value
+                board[y][x-1].value = None
+            elif (
+                tile_value == tile_below_value
+                and tile_value is not None
+            ):
+                board[y][x].value = tile_value * 2
+                board[y][x-1].value = None
+    return board
 
 
 def print_board(board: Board) -> None:
     for y in range(len(board)):
         print("\t".join([str(tile.value or "0") for tile in board[y]]))
-    print("=============")
+    print("=========================")
+
+
+def complete_move(board: Board, move_func: Callable[..., Board]) -> Tuple[Board, bool]:
+    new_board = deepcopy(board)
+    for _ in range(10):
+        new_board = move_func(new_board)
+
+    boards_are_same = check_boards_are_same(board, new_board)
+    print(f"{boards_are_same=}")
+    if not boards_are_same:
+        board = new_board
+
+    return board, not boards_are_same
 
 
 def main() -> None:
     pygame.init()
     FONT: Final[pygame.font.Font] = pygame.font.SysFont('Arial', 25)
-    board = create_board(font=FONT, starting_board=True)
+    board = create_board(font=FONT)
 
     screen = pygame.display.set_mode(SCREEN_DIMENSIONS)
 
@@ -225,8 +254,8 @@ def main() -> None:
 
     for row in board:
         for tile in row:
-            tile.draw(screen)
-    print_board(board)
+            tile.draw(screen, FONT)
+    # print_board(board)
 
     while not done:
         moved = False
@@ -237,49 +266,13 @@ def main() -> None:
                 case pygame.KEYDOWN:
                     match event.key:
                         case pygame.K_UP:
-                            moved = True
-                            new_board = move_up(board)
-                            permutated_board = new_board
-                            while True:
-                                permutated_board = move_up(permutated_board)
-                                move_complete = check_move_complete(permutated_board, new_board)
-                                new_board = permutated_board
-                                if move_complete:
-                                    break
-                            board = new_board
+                            board, moved = complete_move(board, move_up)
                         case pygame.K_DOWN:
-                            moved = True
-                            new_board = move_down(board)
-                            permutated_board = new_board
-                            while True:
-                                permutated_board = move_down(permutated_board)
-                                move_complete = check_move_complete(permutated_board, new_board)
-                                new_board = permutated_board
-                                if move_complete:
-                                    break
-                            board = new_board
+                            board, moved = complete_move(board, move_down)
                         case pygame.K_LEFT:
-                            moved = True
-                            new_board = move_left(board)
-                            permutated_board = new_board
-                            while True:
-                                permutated_board = move_left(permutated_board)
-                                move_complete = check_move_complete(permutated_board, new_board)
-                                new_board = permutated_board
-                                if move_complete:
-                                    break
-                            board = new_board
+                            board, moved = complete_move(board, move_left)
                         case pygame.K_RIGHT:
-                            moved = True
-                            new_board = move_right(board)
-                            permutated_board = new_board
-                            while True:
-                                permutated_board = move_right(permutated_board)
-                                move_complete = check_move_complete(permutated_board, new_board)
-                                new_board = permutated_board
-                                if move_complete:
-                                    break
-                            board = new_board
+                             board, moved = complete_move(board, move_right)
                         case _:
                             pass
                 case _:
@@ -301,11 +294,11 @@ def main() -> None:
 
             for row in board:
                 for tile in row:
-                    tile.draw(screen)
+                    tile.draw(screen, FONT)
 
-            print_board(board)
+            # print_board(board)
 
-        clock.tick(5)
+        clock.tick(30)
         pygame.display.flip()
     pygame.quit()
 
