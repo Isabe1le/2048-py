@@ -20,6 +20,7 @@ BLACK: Final[ColourType] = (0, 0, 0)
 WHITE: Final[ColourType] = (255, 255, 255)
 TILE_SIZE: Final[int] = 100
 BOARD_SIZE: Final[int] = 4
+PADDING_BETWEEN_TILES: Final[int] = int(TILE_SIZE/20)
 SCREEN_DIMENSIONS: Final[Tuple[int, int]] = (TILE_SIZE*BOARD_SIZE, TILE_SIZE*BOARD_SIZE)
 UNKNOWN_COLOUR: Final[pygame.Color] = pygame.Color("#FFFF00")
 BASE_COLOUR: Final[pygame.Color] = pygame.Color("#FFFFFF")
@@ -64,6 +65,15 @@ class Tile:
         )
 
     @property
+    def _inner_rect_info(self) -> Tuple[int, int, int, int]:
+        return (
+            self.pos[0]+PADDING_BETWEEN_TILES,
+            self.pos[1]+PADDING_BETWEEN_TILES,
+            self._size-PADDING_BETWEEN_TILES*2,
+            self._size-PADDING_BETWEEN_TILES*2,
+        )
+
+    @property
     def colour(self) -> pygame.Color:
         if self.value == 0 or self.value is None:
             return BASE_COLOUR
@@ -83,8 +93,13 @@ class Tile:
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         pygame.draw.rect(
             screen,
-            self.colour,
+            BASE_COLOUR,
             self._rect_info,
+        )
+        pygame.draw.rect(
+            screen,
+            self.colour,
+            self._inner_rect_info,
         )
         if self.value is not None:
             text = font.render(str(self.value), True, BLACK)
