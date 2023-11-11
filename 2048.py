@@ -17,11 +17,10 @@ ColourType = Tuple[int, int, int]
 
 # Define some colors
 BLACK: Final[ColourType] = (0, 0, 0)
-WHITE: Final[ColourType] = (255, 255, 255)
 TILE_SIZE: Final[int] = 100
-BOARD_SIZE: Final[int] = 4
+BOARD_SIZE: Final[Tuple[int, int]] = (4, 4)
 PADDING_BETWEEN_TILES: Final[int] = int(TILE_SIZE/20)
-SCREEN_DIMENSIONS: Final[Tuple[int, int]] = (TILE_SIZE*BOARD_SIZE, TILE_SIZE*BOARD_SIZE)
+SCREEN_DIMENSIONS: Final[Tuple[int, int]] = (int(TILE_SIZE*BOARD_SIZE[0]), int(TILE_SIZE*BOARD_SIZE[1]))
 UNKNOWN_COLOUR: Final[pygame.Color] = pygame.Color("#FFFF00")
 BASE_COLOUR: Final[pygame.Color] = pygame.Color("#FFFFFF")
 COLOURS: Final[Dict[int, pygame.Color]] = {
@@ -138,14 +137,14 @@ def create_board(
                 x=x,
                 y=y,
                 size=TILE_SIZE,
-            ) for x in range(BOARD_SIZE)]
-        for y in range(BOARD_SIZE)
+            ) for x in range(BOARD_SIZE[0])]
+        for y in range(BOARD_SIZE[1])
     ]
 
     if starting_board:
-        for _ in range(max([2, int(BOARD_SIZE/2)])):
-            x = choice(range(len(board)))
-            y = choice(range(len(board[0])))
+        for _ in range(max([2, int(min(BOARD_SIZE[0], BOARD_SIZE[1])/2)])):
+            x = choice(range(len(board[0])))-1
+            y = choice(range(len(board)))-1
             board[y][x].value = choice([2, 4])
 
     return board
@@ -259,10 +258,10 @@ def print_board(board: Board) -> None:
 def complete_move(board: Board, move_func: Callable[..., Board]) -> Tuple[Board, bool]:
     new_board = deepcopy(board)
 
-    for _ in range(BOARD_SIZE**2):
+    for _ in range(max(BOARD_SIZE[0], BOARD_SIZE[1])**2):
         new_board = move_func(new_board)
     new_board = move_func(new_board, merges=True)
-    for _ in range(BOARD_SIZE**2):
+    for _ in range(max(BOARD_SIZE[0], BOARD_SIZE[1])**2):
         new_board = move_func(new_board)
 
     boards_are_same = check_boards_are_same(board, new_board)
