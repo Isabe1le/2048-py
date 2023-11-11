@@ -150,7 +150,7 @@ def create_board(
 
     return board
 
-def move_up(board: Board) -> Board:
+def move_up(board: Board, merges: bool = False) -> Board:
     global score
     for y in range(len(board)):
         if y == len(board)-1:
@@ -167,6 +167,7 @@ def move_up(board: Board) -> Board:
             elif (
                 tile_value == tile_below_value
                 and tile_value is not None
+                and merges
             ):
                 board[y][x].value = tile_value * 2
                 score += tile_value * 2
@@ -174,7 +175,7 @@ def move_up(board: Board) -> Board:
     return board
 
 
-def move_down(board: Board) -> Board:
+def move_down(board: Board, merges: bool = False) -> Board:
     global score
     for y in range(len(board)):
         if y == 0:
@@ -191,6 +192,7 @@ def move_down(board: Board) -> Board:
             elif (
                 tile_value == tile_below_value
                 and tile_value is not None
+                and merges
             ):
                 board[y][x].value = tile_value * 2
                 score += tile_value * 2
@@ -198,7 +200,7 @@ def move_down(board: Board) -> Board:
     return board
 
 
-def move_left(board: Board) -> Board:
+def move_left(board: Board, merges: bool = False) -> Board:
     global score
     for y in range(len(board)):
         for x in range(len(board[y])):
@@ -215,6 +217,7 @@ def move_left(board: Board) -> Board:
             elif (
                 tile_value == tile_below_value
                 and tile_value is not None
+                and merges
             ):
                 board[y][x].value = tile_value * 2
                 score += tile_value * 2
@@ -222,7 +225,7 @@ def move_left(board: Board) -> Board:
     return board
 
 
-def move_right(board: Board) -> Board:
+def move_right(board: Board, merges: bool = False) -> Board:
     global score
     for y in range(len(board)):
         for x in range(len(board[y])):
@@ -239,6 +242,7 @@ def move_right(board: Board) -> Board:
             elif (
                 tile_value == tile_below_value
                 and tile_value is not None
+                and merges
             ):
                 board[y][x].value = tile_value * 2
                 score += tile_value * 2
@@ -254,6 +258,10 @@ def print_board(board: Board) -> None:
 
 def complete_move(board: Board, move_func: Callable[..., Board]) -> Tuple[Board, bool]:
     new_board = deepcopy(board)
+
+    for _ in range(BOARD_SIZE**2):
+        new_board = move_func(new_board)
+    new_board = move_func(new_board, merges=True)
     for _ in range(BOARD_SIZE**2):
         new_board = move_func(new_board)
 
@@ -268,7 +276,7 @@ def check_more_moves_possible(board: Board) -> bool:
     move_functions = [move_up, move_down, move_left, move_right]
     for move_func in move_functions:
         new_board = deepcopy(board)
-        moved_board = move_func(new_board)
+        moved_board = move_func(new_board, merges=True)
         move_changed_board = not check_boards_are_same(board, moved_board)
         if move_changed_board:
             return True
