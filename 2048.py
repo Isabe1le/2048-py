@@ -217,7 +217,7 @@ def move_up(board: Board, merges: bool = False) -> Board:
 
 def move_down(board: Board, merges: bool = False) -> Board:
     global score
-    for y in range(len(board)):
+    for y in range(len(board)-1, -1, -1):
         if y == 0:
             continue
         for x in range(len(board[y])):
@@ -268,7 +268,7 @@ def move_left(board: Board, merges: bool = False) -> Board:
 def move_right(board: Board, merges: bool = False) -> Board:
     global score
     for y in range(len(board)):
-        for x in range(len(board[y])):
+        for x in range(len(board[y])-1, -1, -1):
             if x == 0:
                 continue
             tile_value = board[y][x]
