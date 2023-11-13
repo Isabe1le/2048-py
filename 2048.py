@@ -55,14 +55,11 @@ COLOURS: Final[Dict[int, Colour]] = {
     2048: Colour("#EDC22D"),
 }
 
-# Define game settings
+# Define game settings (editable)
 TILE_SIZE_PX: Final[int] = 100
-FONT_SIZE: Final[int] = 25
 FONT_NAME: Final[str] = "Arial"
-FONT: Final[Font] = SysFont(FONT_NAME, FONT_SIZE)
 FPS: Final[int] = 30
 BOARD_SIZE: Final[Pos] = (4, 4)
-PADDING_BETWEEN_TILES_PX: Final[int] = int(TILE_SIZE_PX/20)
 SPAWNING_WEIGHTS: Final[Dict[int, float]] = {
     2: 0.9,
     4: 0.1,
@@ -73,10 +70,18 @@ KEYBINDS: Final[Dict[int, str]] = {
     pygame.K_LEFT:  'move_left',
     pygame.K_RIGHT: 'move_right',
 }
+
+
+# Calculated constants (don't edit)
 SCREEN_DIMENSIONS: Final[Pos] = (
     int(TILE_SIZE_PX*BOARD_SIZE[0]),
     int(TILE_SIZE_PX*BOARD_SIZE[1]),
 )
+PADDING_BETWEEN_TILES_PX: Final[int] = int(TILE_SIZE_PX/20)
+FONT_SIZE: Final[int] = int(TILE_SIZE_PX/4)
+FONT: Final[Font] = SysFont(FONT_NAME, FONT_SIZE)
+INNER_RECT_INFO_BOUNDING_SIZE: Final[int] = TILE_SIZE_PX-PADDING_BETWEEN_TILES_PX*2
+HALF_TILE_SIZE_PX: Final[int] = int(TILE_SIZE_PX/2)
 
 
 # Define custom types
@@ -95,7 +100,6 @@ class Tile:
         "value",
         "x",
         "y",
-        "_size",
     )
 
     def __init__(
@@ -103,20 +107,18 @@ class Tile:
         value: Optional[int],
         x: int,
         y: int,
-        size: int,
     ) -> None:
         self.value = value
         self.x = x
         self.y = y
-        self._size = size
 
     @property
     def _rect_info(self) -> RectPos:
         return (
             self.pos[0],
             self.pos[1],
-            self._size,
-            self._size,
+            TILE_SIZE_PX,
+            TILE_SIZE_PX,
         )
 
     @property
@@ -124,8 +126,8 @@ class Tile:
         return (
             self.pos[0]+PADDING_BETWEEN_TILES_PX,
             self.pos[1]+PADDING_BETWEEN_TILES_PX,
-            self._size-PADDING_BETWEEN_TILES_PX*2,
-            self._size-PADDING_BETWEEN_TILES_PX*2,
+            INNER_RECT_INFO_BOUNDING_SIZE,
+            INNER_RECT_INFO_BOUNDING_SIZE,
         )
 
     @property
@@ -136,13 +138,13 @@ class Tile:
 
     @property
     def pos(self) -> Pos:
-        return (self.x*self._size, self.y*self._size)
+        return (self.x*TILE_SIZE_PX, self.y*TILE_SIZE_PX)
 
     @property
     def center_pos(self) -> Pos:
         return (
-            int(self.pos[0] + (self._size/2)),
-            int(self.pos[1] + (self._size/2)),
+            int(self.pos[0] + HALF_TILE_SIZE_PX),
+            int(self.pos[1] + HALF_TILE_SIZE_PX),
         )
 
     def draw(self, screen: Surface, font: Font) -> None:
@@ -190,7 +192,6 @@ def create_board(
                 ),
                 x=x,
                 y=y,
-                size=TILE_SIZE_PX,
             ) for x in range(BOARD_SIZE[0])]
         for y in range(BOARD_SIZE[1])
     ]
