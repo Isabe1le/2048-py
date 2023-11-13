@@ -20,6 +20,10 @@ BLACK: Final[ColourType] = (0, 0, 0)
 TILE_SIZE: Final[int] = 100
 BOARD_SIZE: Final[Tuple[int, int]] = (4, 4)
 PADDING_BETWEEN_TILES: Final[int] = int(TILE_SIZE/20)
+SPAWNING_WEIGHTS: Final[Dict[int, float]] = {
+    2: 0.9,
+    4: 0.1,
+}
 SCREEN_DIMENSIONS: Final[Tuple[int, int]] = (int(TILE_SIZE*BOARD_SIZE[0]), int(TILE_SIZE*BOARD_SIZE[1]))
 UNKNOWN_COLOUR: Final[pygame.Color] = pygame.Color("#FFFF00")
 BASE_COLOUR: Final[pygame.Color] = pygame.Color("#FFFFFF")
@@ -145,9 +149,18 @@ def create_board(
         for _ in range(max([2, int(min(BOARD_SIZE[0], BOARD_SIZE[1])/2)])):
             x = choice(range(len(board[0])))-1
             y = choice(range(len(board)))-1
-            board[y][x].value = choice([2, 4])
+            board[y][x].value = _random_new_tile()
 
     return board
+
+
+def _random_new_tile() -> int:
+    weighted_list: List[int] = []
+    for tile, weight in SPAWNING_WEIGHTS.items():
+        weight = int(weight * 100)
+        weighted_list.extend([tile for _ in range(weight)])
+    return choice(weighted_list)
+
 
 def move_up(board: Board, merges: bool = False) -> Board:
     global score
@@ -351,7 +364,7 @@ def main() -> None:
             if len(open_positions) != 0:
                 new_tile_position = choice(open_positions)
                 x, y = new_tile_position
-                board[y][x].value = choice([2, 4])
+                board[y][x].value = _random_new_tile()
 
             for row in board:
                 for tile in row:
