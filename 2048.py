@@ -90,91 +90,70 @@ SPAWNING_WEIGHTS_VALUES_LIST: Final[List[float]] = list(SPAWNING_WEIGHTS.values(
 
 
 # Define custom types
-Board = List[List['Tile']]
-RectPos = Tuple[int, int, int, int]
 Pos = Tuple[int, int]
+Tile = int
+Board = List[List[Tile]]
+RectPos = Tuple[int, int, int, int]
+
 
 
 # Game score
 global score
 score: int = 0
 
-
-class Tile:
-    __slots__: Final[Tuple[str, ...]] = (
-        "value",
-        "x",
-        "y",
+def _rect_info(pos: Pos) -> RectPos:
+    return (
+        pos[0]*TILE_SIZE_PX,
+        pos[1]*TILE_SIZE_PX,
+        pos[0]*TILE_SIZE_PX + TILE_SIZE_PX,
+        pos[1]*TILE_SIZE_PX + TILE_SIZE_PX,
     )
 
-    def __init__(
-        self,
-        value: Optional[int],
-        x: int,
-        y: int,
-    ) -> None:
-        self.value = value
-        self.x = x
-        self.y = y
+def get_tile_inner_rect_info(pos: Pos) -> RectPos:
+    return (
+        pos[0]*TILE_SIZE_PX+PADDING_BETWEEN_TILES_PX,
+        pos[1]*TILE_SIZE_PX+PADDING_BETWEEN_TILES_PX,
+        INNER_RECT_INFO_BOUNDING_SIZE,
+        INNER_RECT_INFO_BOUNDING_SIZE,
+    )
 
-    @property
-    def _rect_info(self) -> RectPos:
-        return (
-            self.pos[0],
-            self.pos[1],
-            TILE_SIZE_PX,
-            TILE_SIZE_PX,
-        )
+def get_tile_colour(tile: Tile) -> Colour:
+    if tile in COLOURS_SET:
+        return COLOURS[tile]
+    return BASE_COLOUR
 
-    @property
-    def _inner_rect_info(self) -> RectPos:
-        return (
-            self.pos[0]+PADDING_BETWEEN_TILES_PX,
-            self.pos[1]+PADDING_BETWEEN_TILES_PX,
-            INNER_RECT_INFO_BOUNDING_SIZE,
-            INNER_RECT_INFO_BOUNDING_SIZE,
-        )
+def get_tile_center_pos(pos: Pos) -> Pos:
+    return (
+        int(pos[0]*TILE_SIZE_PX + HALF_TILE_SIZE_PX),
+        int(pos[1]*TILE_SIZE_PX + HALF_TILE_SIZE_PX),
+    )
 
-    @property
-    def colour(self) -> Colour:
-        if self.value in COLOURS_SET:
-            return COLOURS[self.value]
-        return BASE_COLOUR
+def get_tile_value(pos: Pos, board: Board) -> Tile:
+    return board[pos[1]][pos[0]]
 
-    @property
-    def pos(self) -> Pos:
-        return (self.x*TILE_SIZE_PX, self.y*TILE_SIZE_PX)
-
-    @property
-    def center_pos(self) -> Pos:
-        return (
-            int(self.pos[0] + HALF_TILE_SIZE_PX),
-            int(self.pos[1] + HALF_TILE_SIZE_PX),
-        )
-
-    def draw(self, screen: Surface, font: Font) -> None:
+def draw(pos: Pos, board: Board, screen: Surface) -> None:
+    rect(
+        screen,
+        BASE_COLOUR,
+        _rect_info(pos),
+    )
+    tile_value = get_tile_value(pos, board)
+    if tile_value != 0:
         rect(
             screen,
-            BASE_COLOUR,
-            self._rect_info,
+            get_tile_colour(tile_value),
+            get_tile_inner_rect_info(pos),
         )
-
-        if self.value is not None:
-            rect(
-                screen,
-                self.colour,
-                self._inner_rect_info,
-            )
-            text = font.render(str(self.value), True, BLACK)
-            text_rect = text.get_rect(center=self.center_pos)
-            screen.blit(text, text_rect)
-            update()
+        text = FONT.render(f"{tile_value}", True, BLACK)
+        text_rect = text.get_rect(center=get_tile_center_pos(pos))
+        screen.blit(text, text_rect)
+        update()
 
 
 def check_boards_are_same(old_board: Board, new_board: Board) -> bool:
     for y in range(len(old_board)):
         for x in range(len(old_board[y])):
-            if old_board[y][x].value != new_board[y][x].value:
+            if old_board[y][x] != new_board[y][x]:
                 return False
     return True
 
@@ -187,16 +166,9 @@ def create_board(
         raise ValueError("Cannot have `starting_board` and `fixed_start` enabled.")
     board = [
         [
-            Tile(
-                value=(
-                    None if fixed_start is None
-                    else (
-                        None if fixed_start[y][x] == 0
-                        else fixed_start[y][x]
-                    )
-                ),
-                x=x,
-                y=y,
+            (
+                0 if fixed_start is None
+                    else fixed_start[y][x]
             ) for x in range(BOARD_SIZE[0])]
         for y in range(BOARD_SIZE[1])
     ]
@@ -205,7 +177,7 @@ def create_board(
         for _ in range(max([2, int(min(BOARD_SIZE[0], BOARD_SIZE[1])/2)])):
             x = choice(range(len(board[0])))-1
             y = choice(range(len(board)))-1
-            board[y][x].value = _random_new_tile()
+            board[y][x] = _random_new_tile()
 
     return board
 
@@ -224,22 +196,22 @@ def move_up(board: Board, merges: bool = False) -> Board:
         if y == len(board)-1:
             continue
         for x in range(len(board[y])):
-            tile_value = board[y][x].value
-            tile_below_value = board[y+1][x].value
+            tile_value = int(board[y][x])
+            tile_below_value = int(board[y+1][x])
             if (
-                tile_value is None
-                and tile_below_value is not None
+                tile_value == 0
+                and tile_below_value != 0
             ):
-                board[y][x].value = tile_below_value
-                board[y+1][x].value = None
+                board[y][x] = tile_below_value
+                board[y+1][x] = 0
             elif (
                 tile_value == tile_below_value
-                and tile_value is not None
+                and tile_value != 0
                 and merges
             ):
-                board[y][x].value = tile_value * 2
+                board[y][x] = tile_value * 2
+                board[y+1][x] = 0
                 score += tile_value * 2
-                board[y+1][x].value = None
     return board
 
 
@@ -249,22 +221,22 @@ def move_down(board: Board, merges: bool = False) -> Board:
         if y == 0:
             continue
         for x in range(len(board[y])):
-            tile_value = board[y][x].value
-            tile_below_value = board[y-1][x].value
+            tile_value = board[y][x]
+            tile_below_value = board[y-1][x]
             if (
-                tile_value is None
-                and tile_below_value is not None
+                tile_value == 0
+                and tile_below_value != 0
             ):
-                board[y][x].value = tile_below_value
-                board[y-1][x].value = None
+                board[y][x] = tile_below_value
+                board[y-1][x] = 0
             elif (
                 tile_value == tile_below_value
-                and tile_value is not None
+                and tile_value != 0
                 and merges
             ):
-                board[y][x].value = tile_value * 2
+                board[y][x] = tile_value * 2
                 score += tile_value * 2
-                board[y-1][x].value = None
+                board[y-1][x] = 0
     return board
 
 
@@ -274,22 +246,22 @@ def move_left(board: Board, merges: bool = False) -> Board:
         for x in range(len(board[y])):
             if x == len(board[y])-1:
                 continue
-            tile_value = board[y][x].value
-            tile_below_value = board[y][x+1].value
+            tile_value = board[y][x]
+            tile_below_value = board[y][x+1]
             if (
-                tile_value is None
-                and tile_below_value is not None
+                tile_value == 0
+                and tile_below_value != 0
             ):
-                board[y][x].value = tile_below_value
-                board[y][x+1].value = None
+                board[y][x] = tile_below_value
+                board[y][x+1] = 0
             elif (
                 tile_value == tile_below_value
-                and tile_value is not None
+                and tile_value != 0
                 and merges
             ):
-                board[y][x].value = tile_value * 2
+                board[y][x] = tile_value * 2
                 score += tile_value * 2
-                board[y][x+1].value = None
+                board[y][x+1] = 0
     return board
 
 
@@ -299,28 +271,29 @@ def move_right(board: Board, merges: bool = False) -> Board:
         for x in range(len(board[y])):
             if x == 0:
                 continue
-            tile_value = board[y][x].value
-            tile_below_value = board[y][x-1].value
+            tile_value = board[y][x]
+            tile_below_value = board[y][x-1]
             if (
-                tile_value is None
-                and tile_below_value is not None
+                tile_value == 0
+                and tile_below_value != 0
             ):
-                board[y][x].value = tile_below_value
-                board[y][x-1].value = None
+                board[y][x] = tile_below_value
+                board[y][x-1] = 0
             elif (
                 tile_value == tile_below_value
-                and tile_value is not None
+                and tile_value != 0
                 and merges
             ):
-                board[y][x].value = tile_value * 2
+                board[y][x] = tile_value * 2
                 score += tile_value * 2
-                board[y][x-1].value = None
+                board[y][x-1] = 0
     return board
 
 
 def print_board(board: Board) -> None:
+    print(board)
     for y in range(len(board)):
-        print("\t".join([str(tile.value or "0") for tile in board[y]]))
+        print("\t".join([str(tile or "0") for tile in board[y]]))
     print("=========================")
 
 
@@ -365,6 +338,17 @@ def draw_loose_screen(screen: Surface, font: Font) -> None:
     screen.blit(text, text_rect)
     update()
 
+
+def draw_board(board: Board, screen: Surface) -> None:
+    for y in range(BOARD_SIZE[1]):
+        if y == BOARD_SIZE[1]:
+            continue
+        for x in range(BOARD_SIZE[0]):
+            if x == BOARD_SIZE[0]:
+                continue
+            draw((x, y), board, screen)
+
+
 def main() -> None:
     pyg_game_init()
     board = create_board(starting_board=True)
@@ -376,9 +360,7 @@ def main() -> None:
     done = False
     clock = Clock()
 
-    for row in board:
-        for tile in row:
-            tile.draw(screen, FONT)
+    draw_board(board, screen)
 
     text = FONT.render(f"Score: {score}", True, BLACK)
     text_rect = text.get_rect()
@@ -404,18 +386,16 @@ def main() -> None:
             open_positions: List[Pos] = []
             for y in range(len(board)):
                 for x in range(len(board[y])):
-                    if board[y][x].value is None:
+                    if board[y][x] == 0:
                         open_positions.append((x, y))
 
             # Add a new tile, if possible.
             if len(open_positions) != 0:
                 new_tile_position = choice(open_positions)
                 x, y = new_tile_position
-                board[y][x].value = _random_new_tile()
+                board[y][x] = _random_new_tile()
 
-            for row in board:
-                for tile in row:
-                    tile.draw(screen, FONT)
+            draw_board(board, screen)
 
             more_moves_possible = check_more_moves_possible(board)
             if not more_moves_possible:
@@ -425,6 +405,7 @@ def main() -> None:
                 text = FONT.render(f"Score: {score}", True, BLACK)
                 text_rect = text.get_rect()
                 screen.blit(text, text_rect)
+            # print_board(board)
 
         clock.tick(FPS)
         flip()
