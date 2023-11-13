@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from random import choice
+from random import choice, choices
 from typing import (
     Callable,
     Dict,
@@ -83,8 +83,10 @@ FONT_SIZE: Final[int] = int(TILE_SIZE_PX/4)
 FONT: Final[Font] = SysFont(FONT_NAME, FONT_SIZE)
 INNER_RECT_INFO_BOUNDING_SIZE: Final[int] = TILE_SIZE_PX-PADDING_BETWEEN_TILES_PX*2
 HALF_TILE_SIZE_PX: Final[int] = int(TILE_SIZE_PX/2)
-COLOURS_SET: Final[Set[int]] = set(list(COLOURS.keys()))
-KEYBINDS_SET: Final[Set[int]] = set(list(KEYBINDS.keys()))
+COLOURS_SET: Final[Set[int]] = set(COLOURS.keys())
+KEYBINDS_SET: Final[Set[int]] = set(KEYBINDS.keys())
+SPAWNING_WEIGHTS_KEYS_SET: Final[List[int]] = list(SPAWNING_WEIGHTS.keys())
+SPAWNING_WEIGHTS_VALUES_LIST: Final[List[float]] = list(SPAWNING_WEIGHTS.values())
 
 
 # Define custom types
@@ -209,11 +211,11 @@ def create_board(
 
 
 def _random_new_tile() -> int:
-    weighted_list: List[int] = []
-    for tile, weight in SPAWNING_WEIGHTS.items():
-        weight = int(weight * 100)
-        weighted_list.extend([tile for _ in range(weight)])
-    return choice(weighted_list)
+    return choices(
+        population=SPAWNING_WEIGHTS_KEYS_SET,
+        weights=SPAWNING_WEIGHTS_VALUES_LIST,
+        k=1,
+    )[0]
 
 
 def move_up(board: Board, merges: bool = False) -> Board:
