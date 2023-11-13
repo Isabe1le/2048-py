@@ -67,6 +67,12 @@ SPAWNING_WEIGHTS: Final[Dict[int, float]] = {
     2: 0.9,
     4: 0.1,
 }
+KEYBINDS: Final[Dict[int, str]] = {
+    pygame.K_UP:    'move_up',
+    pygame.K_DOWN:  'move_down',
+    pygame.K_LEFT:  'move_left',
+    pygame.K_RIGHT: 'move_right',
+}
 SCREEN_DIMENSIONS: Final[Pos] = (
     int(TILE_SIZE_PX*BOARD_SIZE[0]),
     int(TILE_SIZE_PX*BOARD_SIZE[1]),
@@ -381,17 +387,10 @@ def main() -> None:
                 case pygame.QUIT:
                     done = True
                 case pygame.KEYDOWN:
-                    match event.key:
-                        case pygame.K_UP:
-                            board, moved = complete_move(board, move_up)
-                        case pygame.K_DOWN:
-                            board, moved = complete_move(board, move_down)
-                        case pygame.K_LEFT:
-                            board, moved = complete_move(board, move_left)
-                        case pygame.K_RIGHT:
-                             board, moved = complete_move(board, move_right)
-                        case _:
-                            pass
+                    move_func = KEYBINDS.get(event.key, None)
+                    if move_func is not None:
+                        move_func = globals()[move_func]
+                        board, moved = complete_move(board, move_func)
                 case _:
                     pass
 
