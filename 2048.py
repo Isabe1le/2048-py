@@ -8,6 +8,7 @@ from typing import (
     Final,
     List,
     Optional,
+    Set,
     Tuple,
 )
 
@@ -82,6 +83,8 @@ FONT_SIZE: Final[int] = int(TILE_SIZE_PX/4)
 FONT: Final[Font] = SysFont(FONT_NAME, FONT_SIZE)
 INNER_RECT_INFO_BOUNDING_SIZE: Final[int] = TILE_SIZE_PX-PADDING_BETWEEN_TILES_PX*2
 HALF_TILE_SIZE_PX: Final[int] = int(TILE_SIZE_PX/2)
+COLOURS_SET: Final[Set[int]] = set(list(COLOURS.keys()))
+KEYBINDS_SET: Final[Set[int]] = set(list(KEYBINDS.keys()))
 
 
 # Define custom types
@@ -132,9 +135,9 @@ class Tile:
 
     @property
     def colour(self) -> Colour:
-        if self.value == 0 or self.value is None:
-            return BASE_COLOUR
-        return COLOURS.get(self.value, BASE_COLOUR)
+        if self.value in COLOURS_SET:
+            return COLOURS[self.value]
+        return BASE_COLOUR
 
     @property
     def pos(self) -> Pos:
@@ -388,9 +391,8 @@ def main() -> None:
                 case pygame.QUIT:
                     done = True
                 case pygame.KEYDOWN:
-                    move_func = KEYBINDS.get(event.key, None)
-                    if move_func is not None:
-                        move_func = globals()[move_func]
+                    if event.key in KEYBINDS_SET:
+                        move_func = globals()[KEYBINDS[event.key]]
                         board, moved = complete_move(board, move_func)
                 case _:
                     pass
