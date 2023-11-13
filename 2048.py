@@ -99,12 +99,13 @@ class Tile:
             BASE_COLOUR,
             self._rect_info,
         )
-        pygame.draw.rect(
-            screen,
-            self.colour,
-            self._inner_rect_info,
-        )
+
         if self.value is not None:
+            pygame.draw.rect(
+                screen,
+                self.colour,
+                self._inner_rect_info,
+            )
             text = font.render(str(self.value), True, BLACK)
             text_rect = text.get_rect(center=self.center_pos)
             screen.blit(text, text_rect)
