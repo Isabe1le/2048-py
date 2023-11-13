@@ -96,10 +96,10 @@ Board = List[List[Tile]]
 RectPos = Tuple[int, int, int, int]
 
 
-
 # Game score
 global score
 score: int = 0
+
 
 def _rect_info(pos: Pos) -> RectPos:
     return (
@@ -109,6 +109,7 @@ def _rect_info(pos: Pos) -> RectPos:
         pos[1]*TILE_SIZE_PX + TILE_SIZE_PX,
     )
 
+
 def get_tile_inner_rect_info(pos: Pos) -> RectPos:
     return (
         pos[0]*TILE_SIZE_PX+PADDING_BETWEEN_TILES_PX,
@@ -117,10 +118,12 @@ def get_tile_inner_rect_info(pos: Pos) -> RectPos:
         INNER_RECT_INFO_BOUNDING_SIZE,
     )
 
+
 def get_tile_colour(tile: Tile) -> Colour:
     if tile in COLOURS_SET:
         return COLOURS[tile]
     return BASE_COLOUR
+
 
 def get_tile_center_pos(pos: Pos) -> Pos:
     return (
@@ -128,8 +131,10 @@ def get_tile_center_pos(pos: Pos) -> Pos:
         int(pos[1]*TILE_SIZE_PX + HALF_TILE_SIZE_PX),
     )
 
+
 def get_tile_value(pos: Pos, board: Board) -> Tile:
     return board[pos[1]][pos[0]]
+
 
 def draw(pos: Pos, board: Board, screen: Surface) -> None:
     rect(
