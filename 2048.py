@@ -1,6 +1,6 @@
 from __future__ import annotations
-from copy import deepcopy
 
+from copy import deepcopy
 from random import choice
 from typing import (
     Callable,
@@ -12,40 +12,86 @@ from typing import (
 )
 
 import pygame
+from pygame import (
+    Color as Colour,
+    Surface,
+    event as pyg_event,
+    init as pyg_game_init,
+    quit,
+)
+from pygame.display import (
+    flip,
+    set_caption,
+    set_mode,
+    update,
+)
+from pygame.draw import rect
+from pygame.font import (
+    Font,
+    SysFont,
+    init as pyg_font_init,
+)
+from pygame.time import Clock
 
-ColourType = Tuple[int, int, int]
+
+pyg_font_init()
+
 
 # Define some colors
-BLACK: Final[ColourType] = (0, 0, 0)
-TILE_SIZE: Final[int] = 100
-BOARD_SIZE: Final[Tuple[int, int]] = (4, 4)
-PADDING_BETWEEN_TILES: Final[int] = int(TILE_SIZE/20)
+BLACK: Final[Colour] = Colour("#000000")
+UNKNOWN_COLOUR: Final[Colour] = Colour("#FFFF00")
+BASE_COLOUR: Final[Colour] = Colour("#FFFFFF")
+COLOURS: Final[Dict[int, Colour]] = {
+    2:    Colour("#7ec0ee"),
+    4:    Colour("#EDE0C8"),
+    8:    Colour("#F2B179"),
+    16:   Colour("#F59563"),
+    32:   Colour("#F67C60"),
+    64:   Colour("#F65E3B"),
+    128:  Colour("#EDCF73"),
+    256:  Colour("#EDCC62"),
+    512:  Colour("#EDC850"),
+    1024: Colour("#EDC53F"),
+    2048: Colour("#EDC22D"),
+}
+
+# Define game settings
+TILE_SIZE_PX: Final[int] = 100
+FONT_SIZE: Final[int] = 25
+FONT_NAME: Final[str] = "Arial"
+FONT: Final[Font] = SysFont(FONT_NAME, FONT_SIZE)
+FPS: Final[int] = 30
+BOARD_SIZE: Final[Pos] = (4, 4)
+PADDING_BETWEEN_TILES_PX: Final[int] = int(TILE_SIZE_PX/20)
 SPAWNING_WEIGHTS: Final[Dict[int, float]] = {
     2: 0.9,
     4: 0.1,
 }
-SCREEN_DIMENSIONS: Final[Tuple[int, int]] = (int(TILE_SIZE*BOARD_SIZE[0]), int(TILE_SIZE*BOARD_SIZE[1]))
-UNKNOWN_COLOUR: Final[pygame.Color] = pygame.Color("#FFFF00")
-BASE_COLOUR: Final[pygame.Color] = pygame.Color("#FFFFFF")
-COLOURS: Final[Dict[int, pygame.Color]] = {
-    2:    pygame.Color("#7ec0ee"),
-    4:    pygame.Color("#EDE0C8"),
-    8:    pygame.Color("#F2B179"),
-    16:   pygame.Color("#F59563"),
-    32:   pygame.Color("#F67C60"),
-    64:   pygame.Color("#F65E3B"),
-    128:  pygame.Color("#EDCF73"),
-    256:  pygame.Color("#EDCC62"),
-    512:  pygame.Color("#EDC850"),
-    1024: pygame.Color("#EDC53F"),
-    2048: pygame.Color("#EDC22D"),
-}
+SCREEN_DIMENSIONS: Final[Pos] = (
+    int(TILE_SIZE_PX*BOARD_SIZE[0]),
+    int(TILE_SIZE_PX*BOARD_SIZE[1]),
+)
 
+
+# Define custom types
+Board = List[List['Tile']]
+RectPos = Tuple[int, int, int, int]
+Pos = Tuple[int, int]
+
+
+# Game score
 global score
 score: int = 0
 
 
 class Tile:
+    __slots__: Final[Tuple[str, ...]] = (
+        "value",
+        "x",
+        "y",
+        "_size",
+    )
+
     def __init__(
         self,
         value: Optional[int],
@@ -59,7 +105,7 @@ class Tile:
         self._size = size
 
     @property
-    def _rect_info(self) -> Tuple[int, int, int, int]:
+    def _rect_info(self) -> RectPos:
         return (
             self.pos[0],
             self.pos[1],
@@ -68,40 +114,40 @@ class Tile:
         )
 
     @property
-    def _inner_rect_info(self) -> Tuple[int, int, int, int]:
+    def _inner_rect_info(self) -> RectPos:
         return (
-            self.pos[0]+PADDING_BETWEEN_TILES,
-            self.pos[1]+PADDING_BETWEEN_TILES,
-            self._size-PADDING_BETWEEN_TILES*2,
-            self._size-PADDING_BETWEEN_TILES*2,
+            self.pos[0]+PADDING_BETWEEN_TILES_PX,
+            self.pos[1]+PADDING_BETWEEN_TILES_PX,
+            self._size-PADDING_BETWEEN_TILES_PX*2,
+            self._size-PADDING_BETWEEN_TILES_PX*2,
         )
 
     @property
-    def colour(self) -> pygame.Color:
+    def colour(self) -> Colour:
         if self.value == 0 or self.value is None:
             return BASE_COLOUR
         return COLOURS.get(self.value, BASE_COLOUR)
 
     @property
-    def pos(self) -> Tuple[int, int]:
+    def pos(self) -> Pos:
         return (self.x*self._size, self.y*self._size)
 
     @property
-    def center_pos(self) -> Tuple[int, int]:
+    def center_pos(self) -> Pos:
         return (
             int(self.pos[0] + (self._size/2)),
             int(self.pos[1] + (self._size/2)),
         )
 
-    def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
-        pygame.draw.rect(
+    def draw(self, screen: Surface, font: Font) -> None:
+        rect(
             screen,
             BASE_COLOUR,
             self._rect_info,
         )
 
         if self.value is not None:
-            pygame.draw.rect(
+            rect(
                 screen,
                 self.colour,
                 self._inner_rect_info,
@@ -109,10 +155,7 @@ class Tile:
             text = font.render(str(self.value), True, BLACK)
             text_rect = text.get_rect(center=self.center_pos)
             screen.blit(text, text_rect)
-            pygame.display.update()
-
-
-Board = List[List[Tile]]
+            update()
 
 
 def check_boards_are_same(old_board: Board, new_board: Board) -> bool:
@@ -141,7 +184,7 @@ def create_board(
                 ),
                 x=x,
                 y=y,
-                size=TILE_SIZE,
+                size=TILE_SIZE_PX,
             ) for x in range(BOARD_SIZE[0])]
         for y in range(BOARD_SIZE[1])
     ]
@@ -296,9 +339,9 @@ def check_more_moves_possible(board: Board) -> bool:
     return False
 
 
-def draw_loose_screen(screen: pygame.Surface, font: pygame.font.Font) -> None:
+def draw_loose_screen(screen: Surface, font: Font) -> None:
     global score
-    surface = pygame.Surface(SCREEN_DIMENSIONS)
+    surface = Surface(SCREEN_DIMENSIONS)
     surface.set_alpha(128)
     surface.fill(BLACK)
     screen.blit(surface, (0,0))
@@ -308,19 +351,18 @@ def draw_loose_screen(screen: pygame.Surface, font: pygame.font.Font) -> None:
         SCREEN_DIMENSIONS[1] / 2,
     ))
     screen.blit(text, text_rect)
-    pygame.display.update()
+    update()
 
 def main() -> None:
-    pygame.init()
-    FONT: Final[pygame.font.Font] = pygame.font.SysFont('Arial', 25)
+    pyg_game_init()
     board = create_board(starting_board=True)
 
-    screen = pygame.display.set_mode(SCREEN_DIMENSIONS)
+    screen = set_mode(SCREEN_DIMENSIONS)
 
-    pygame.display.set_caption("2048")
+    set_caption("2048")
 
     done = False
-    clock = pygame.time.Clock()
+    clock = Clock()
 
     for row in board:
         for tile in row:
@@ -334,7 +376,7 @@ def main() -> None:
 
     while not done:
         moved = False
-        for event in pygame.event.get():
+        for event in pyg_event.get():
             match event.type:
                 case pygame.QUIT:
                     done = True
@@ -355,7 +397,7 @@ def main() -> None:
 
         if moved:
             # Find all open positions
-            open_positions: List[Tuple[int, int]] = []
+            open_positions: List[Pos] = []
             for y in range(len(board)):
                 for x in range(len(board[y])):
                     if board[y][x].value is None:
@@ -380,9 +422,9 @@ def main() -> None:
                 text_rect = text.get_rect()
                 screen.blit(text, text_rect)
 
-        clock.tick(30)
-        pygame.display.flip()
-    pygame.quit()
+        clock.tick(FPS)
+        flip()
+    quit()
 
 
 if __name__ == "__main__":
