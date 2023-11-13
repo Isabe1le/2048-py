@@ -6,5 +6,6 @@
 2. `python 2048.py`
 
 ## Game screenshots
-![img](https://i.imgur.com/zL3t5by.png)
-![img](https://i.imgur.com/D3JrySk.png)
+|In game|Lose screen|
+|--|--|
+|![img](https://i.imgur.com/R36M0lw.png)|![img](https://i.imgur.com/UTqqpb2.png)|
